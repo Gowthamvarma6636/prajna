@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Happy 25th Birthday, Prajna — Silver Jubilee ✨</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+<link rel="stylesheet" href="styles.css?v=9">
+</head>
+<body>
+
+<!-- ═══ ambient layers ═══ -->
+<div class="aurora" aria-hidden="true">
+  <span class="blob b1"></span><span class="blob b2"></span>
+  <span class="blob b3"></span><span class="blob b4"></span>
+</div>
+<div class="stars" id="stars" aria-hidden="true"></div>
+<div class="balloons" id="balloons" aria-hidden="true"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<!-- ═══ 1. the sealed gift ═══ -->
+<div id="veil">
+  <div class="veil-inner">
+    <p class="veil-kicker">twenty-five years · a little something, made by hand</p>
+    <div class="gift" id="gift" role="button" tabindex="0" aria-label="Open your surprise">
+      <div class="gift-lid"><span class="bow"></span></div>
+      <div class="gift-box"><span class="ribbon-v"></span></div>
+      <div class="gift-glow"></div>
+    </div>
+    <h1 class="veil-title">For <em>Prajna</em></h1>
+    <p class="veil-jubilee">Silver Jubilee · 25</p>
+    <button class="btn btn-primary btn-lg" id="openBtn">Open the surprise</button>
+  </div>
+</div>
+
+<!-- ═══ 2. the dashboard ═══ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="silverG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f9ff"/><stop offset=".45" stop-color="#aeb6c8"/><stop offset="1" stop-color="#e9edf7"/>
+    </linearGradient>
+    <g id="leafspray">
+      <path d="M52 156 C 18 120, 10 60, 40 6" fill="none" stroke="url(#silverG)" stroke-width="2.2" stroke-linecap="round"/>
+      <g fill="url(#silverG)">
+        <ellipse cx="30" cy="132" rx="5" ry="12" transform="rotate(-48 30 132)"/>
+        <ellipse cx="40" cy="128" rx="5" ry="12" transform="rotate(28 40 128)"/>
+        <ellipse cx="21" cy="106" rx="5" ry="12" transform="rotate(-52 21 106)"/>
+        <ellipse cx="33" cy="102" rx="5" ry="12" transform="rotate(30 33 102)"/>
+        <ellipse cx="16" cy="78" rx="5" ry="12" transform="rotate(-50 16 78)"/>
+        <ellipse cx="28" cy="74" rx="5" ry="12" transform="rotate(32 28 74)"/>
+        <ellipse cx="17" cy="50" rx="5" ry="11" transform="rotate(-44 17 50)"/>
+        <ellipse cx="29" cy="46" rx="5" ry="11" transform="rotate(34 29 46)"/>
+        <ellipse cx="25" cy="22" rx="4.5" ry="10" transform="rotate(-34 25 22)"/>
+        <ellipse cx="37" cy="18" rx="4.5" ry="10" transform="rotate(30 37 18)"/>
+      </g>
+    </g>
+  </defs>
+</svg>
+<main id="app" hidden>
+
+  <nav class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span class="brand-name">prajna<span class="muted">.silver-jubilee</span></span>
+    </div>
+    <div class="topbar-right">
+      <span class="clock" id="clock">--:--:--</span>
+      <button class="icon-btn" id="partyBtn" title="Confetti!" aria-label="Confetti">🎉</button>
+    </div>
+  </nav>
+
+  <!-- hero -->
+  <header class="hero reveal">
+    <div class="medallion" aria-label="Silver Jubilee, twenty-five years">
+      <svg class="laurel laurel-l" viewBox="0 0 60 160" aria-hidden="true"><use href="#leafspray"/></svg>
+      <div class="medal"><span class="medal-num">25</span><span class="medal-cap">SILVER JUBILEE</span></div>
+      <svg class="laurel laurel-r" viewBox="0 0 60 160" aria-hidden="true"><use href="#leafspray"/></svg>
+    </div>
+    <div class="hero-badge"><span class="pulse"></span> A QUARTER CENTURY · 18 · 12 · 2001</div>
+    <h1 class="hero-title">
+      <span class="line">Happy 25th Birthday,</span>
+      <span class="line grad" id="heroName">Prajna</span>
+    </h1>
+    <p class="hero-sub" id="typewriter"></p>
+    <div class="hero-cta">
+      <button class="btn btn-primary" id="wishBtn">🎂 Make a wish</button>
+      <button class="btn btn-ghost" id="scrollBtn">Explore the dashboard ↓</button>
+    </div>
+  </header>
+
+  <!-- stat tiles -->
+  <section class="section reveal" id="stats">
+    <div class="section-head">
+      <h2>The numbers behind the legend</h2>
+      <p class="section-sub">Live telemetry, counting since day one.</p>
+    </div>
+    <div class="grid grid-4" id="statGrid"></div>
+  </section>
+
+  <!-- cake -->
+  <section class="section reveal">
+    <div class="section-head">
+      <h2>Blow out the candles</h2>
+      <p class="section-sub">Twenty-five years, one breath. Use your mic 🎤 or just tap them. Make it count.</p>
+    </div>
+    <div class="card cake-card">
+      <div class="cake" id="cake">
+        <div class="topper" aria-hidden="true"><span>25</span></div>
+        <div class="candles" id="candles"></div>
+        <div class="cake-top"></div>
+        <div class="cake-mid"><span class="drip"></span><span class="drip"></span><span class="drip"></span><span class="drip"></span><span class="drip"></span></div>
+        <div class="cake-base"></div>
+        <div class="plate"></div>
+      </div>
+      <div class="cake-side">
+        <div class="meter-wrap">
+          <div class="meter-label"><span>Mic breath</span><span id="blowPct">0%</span></div>
+          <div class="meter"><i id="blowBar"></i></div>
+        </div>
+        <p class="cake-status" id="cakeStatus">5 candles still burning.</p>
+        <button class="btn btn-ghost btn-sm" id="micBtn">🎤 Enable mic blowing</button>
+        <button class="btn btn-ghost btn-sm" id="relightBtn">🔥 Relight candles</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- twenty-five -->
+  <section class="section reveal" id="twentyfive">
+    <div class="section-head center">
+      <p class="eyebrow">XXV</p>
+      <h2>Twenty-five, for twenty-five</h2>
+      <p class="section-sub">One small, true thing for every year.</p>
+    </div>
+    <ol class="tf-grid" id="tfGrid"></ol>
+  </section>
+
+  <!-- letter -->
+  <section class="section reveal" id="letterSec">
+    <div class="section-head center">
+      <p class="eyebrow">a letter</p>
+      <h2>For the girl of silver</h2>
+    </div>
+    <article class="letter" id="letter">
+      <div class="letter-seal" aria-hidden="true"><span>25</span></div>
+      <div class="letter-body" id="letterBody"></div>
+      <p class="letter-sign" id="letterSign"></p>
+    </article>
+  </section>
+
+  <!-- reasons -->
+  <section class="section reveal">
+    <div class="section-head">
+      <h2>Reason generator</h2>
+      <p class="section-sub">Infinite supply. Press for a fresh one.</p>
+    </div>
+    <div class="card reason-card">
+      <div class="quote-mark">“</div>
+      <p class="reason-text" id="reasonText">You make ordinary days feel like occasions.</p>
+      <div class="reason-foot">
+        <button class="btn btn-primary btn-sm" id="reasonBtn">Give me another ✨</button>
+        <span class="counter" id="reasonCount">reason #1</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- gallery -->
+  <section class="section reveal">
+    <div class="section-head">
+      <h2>Memory vault</h2>
+      <p class="section-sub">Click any frame to pick a photo, or drag &amp; drop one straight onto it — they stay saved on this machine.</p>
+      <div class="vault-tools">
+        <label class="btn btn-primary btn-sm" id="uploadBtn" for="filePick">⬆️ Upload photos</label>
+        <button class="btn btn-ghost btn-sm" id="clearPhotosBtn">🧹 Clear all</button>
+        <span class="vault-count" id="vaultCount"></span>
+      </div>
+    </div>
+    <div class="grid grid-3" id="gallery"></div>
+    <input type="file" id="filePick" accept="image/*" multiple class="vh">
+  </section>
+
+  <!-- timeline -->
+  <section class="section reveal">
+    <div class="section-head">
+      <h2>The Prajna timeline</h2>
+      <p class="section-sub">A very official history.</p>
+    </div>
+    <ol class="timeline" id="timeline"></ol>
+  </section>
+
+  <!-- wish wall -->
+  <section class="section reveal">
+    <div class="section-head">
+      <h2>Wish wall</h2>
+      <p class="section-sub">Leave a note. It stays here forever (well, in localStorage).</p>
+    </div>
+    <form class="wish-form card" id="wishForm" autocomplete="off">
+      <input id="wishName" class="input" placeholder="Your name" maxlength="24" required>
+      <input id="wishText" class="input input-grow" placeholder="Write your birthday wish for Prajna…" maxlength="180" required>
+      <button class="btn btn-primary" type="submit">Post 💌</button>
+    </form>
+    <div class="grid grid-3" id="wishWall"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-cake">🥂</div>
+    <p class="footer-main">Here's to twenty-five years of <b>Prajna</b> — and to every year after.</p>
+    <p class="footer-sub">Built with far too much care · psst — try typing <kbd>prajna</kbd> anywhere</p>
+  </footer>
+</main>
+
+<!-- ═══ 3. cake slice card ═══ -->
+<div class="modal" id="sliceModal" hidden>
+  <div class="modal-card slice-card">
+    <div class="slice-stage" id="sliceStage"></div>
+    <h3 id="sliceTitle"></h3>
+    <p id="sliceMsg"></p>
+    <button class="btn btn-primary" id="sliceClose">Close</button>
+  </div>
+</div>
+
+<!-- ═══ 4. wish modal ═══ -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-emoji" id="modalEmoji">🌠</div>
+    <h3 id="modalTitle">Wish granted</h3>
+    <p id="modalBody">Keep it secret, keep it safe.</p>
+    <button class="btn btn-primary" id="modalClose">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="config.js?v=9"></script>
+<script src="app.js?v=9"></script>
+</body>
+</html>
