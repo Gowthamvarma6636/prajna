@@ -277,23 +277,33 @@ const cake = (() => {
     try {
       /* raw audio: Chrome's noise suppression + AGC are built to erase exactly the
          broadband rumble that blowing makes, so the meter would never move. */
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-      });
-      const ac = new (window.AudioContext || window.webkitAudioContext)();
-      if (ac.state === "suspended") await ac.resume();
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+        return toast("This browser can't use the mic — tap the candles instead 👆");
+      const ac = new (window.AudioContext || window.webkitAudioContext)();   // made inside the tap so Safari allows it
+      ac.resume && ac.resume().catch(() => {});
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+        });
+      } catch (err1) {
+        try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }   // browsers that reject the raw constraints
+        catch (err2) { ac.close().catch(() => {}); throw err2; }
+      }
+      if (ac.state !== "running") await ac.resume().catch(() => {});
       const src = ac.createMediaStreamSource(stream);
       const an = ac.createAnalyser();
       an.fftSize = 1024; an.smoothingTimeConstant = .35;
       src.connect(an);
 
       const freq = new Uint8Array(an.frequencyBinCount);
+      const wave = new Uint8Array(an.fftSize);
       const binHz = ac.sampleRate / an.fftSize;
       const LO = Math.max(1, Math.round(80 / binHz));       // breath lives low and broad;
       const HI = Math.round(1400 / binHz);                  // ignore everything above speech
       const bar = $("#blowBar");
 
-      let alive = true, charge = 0, floor = 0, cal = 0, quiet = 0;
+      let alive = true, charge = 0, floor = 0, rFloor = 0, cal = 0, quiet = 0;
 
       micOn = true;
       music.duck(true);                                     // keep the song out of the mic
@@ -322,14 +332,23 @@ const cake = (() => {
         for (let i = LO; i <= HI; i++) sum += freq[i];
         const energy = sum / (HI - LO + 1);                 // 0…255, low-band average
 
-        /* first ~40 frames set the room's noise floor so any mic works */
-        if (cal < 40) {
-          cal++; floor = Math.max(floor, energy);
-          if (cal === 40) { floor += 6; toast("Now blow into your mic 💨"); }
+        /* overall loudness too — some phone/laptop mics barely register in the low band */
+        an.getByteTimeDomainData(wave);
+        let sq = 0;
+        for (let i = 0; i < wave.length; i++) { const v = (wave[i] - 128) / 128; sq += v * v; }
+        const rms = Math.sqrt(sq / wave.length);
+
+        /* first ~30 frames: average the room's noise floor (average, not peak) */
+        if (cal < 30) {
+          cal++; floor += energy / 30; rFloor += rms / 30;
+          if (cal === 30) { floor += 4; rFloor += .008; toast("Now blow into your mic 💨"); }
           return;
         }
 
-        const breath = Math.max(0, Math.min(1, (energy - floor) / 55));
+        const raw = Math.max((energy - floor) / 38, (rms - rFloor) / .07);
+        const breath = Math.max(0, Math.min(1, raw));
+        /* the floor keeps following the room slowly while nobody is blowing */
+        if (breath < .08) { floor += (energy - floor) * .01; rFloor += (rms - rFloor) * .01; }
         /* if nothing ever registers, say so instead of failing silently */
         if (breath > .12) quiet = 0;
         else if (++quiet === 480) toast("Not hearing any breath — check the mic input 🎤");
@@ -540,13 +559,31 @@ function buildTimeline() {
 }
 
 /* ══ WISH WALL ═════════════════════════════════════════════ */
-function wishes() { return store.get("wishes", null) || C.wishes; }
+/* shared wall: wishes live in a keyless ntfy.sh topic (kept ~12h) so every visitor sees the same wall. */
+const NTFY = C.ntfyTopic ? `https://ntfy.sh/${C.ntfyTopic}` : "";
+const SHARED = !!NTFY;
+let remote = [];
+async function pullWishes() {
+  if (!SHARED) return;
+  try {
+    const r = await fetch(`${NTFY}/json?poll=1&since=all`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const list = (await r.text()).split("\n").filter(Boolean).map(l => {
+      try { const m = JSON.parse(l); return m.event === "message" ? JSON.parse(m.message) : null; } catch { return null; }
+    });
+    const next = list.filter(w => w && typeof w.text === "string" && typeof w.who === "string")
+                     .map(w => ({ who: w.who.slice(0, 40), text: w.text.slice(0, 180), t: w.t || 0 }))
+                     .sort((a, b) => (b.t || 0) - (a.t || 0));
+    if (JSON.stringify(next) !== JSON.stringify(remote)) { remote = next; renderWishes(); }
+  } catch (e) { console.warn("[wishes] could not reach the shared wall", e); }
+}
+function wishes() { return SHARED ? remote.concat(C.wishes) : (store.get("wishes", null) || C.wishes); }
 function renderWishes() {
   const list = wishes();
   $("#wishWall").innerHTML = list.map((w, i) => {
     const c1 = PALETTE[i % PALETTE.length], c2 = PALETTE[(i + 3) % PALETTE.length];
     return `<article class="note" style="--c1:${c1}26;--c2:${c2}26;--rot:${(i % 2 ? 1 : -1) * rand(.4, 1.4).toFixed(2)}deg;animation-delay:${i * 50}ms">
-      <button class="note-del" data-i="${i}" title="Remove">✕</button>
+      ${SHARED ? "" : `<button class="note-del" data-i="${i}" title="Remove">✕</button>`}
       <p class="note-text">${esc(w.text)}</p>
       <p class="note-who">— ${esc(w.who)}</p>
     </article>`;
@@ -741,6 +778,7 @@ function boot() {
   ]) {
     try { fn(); } catch (err) { console.error(`[dashboard] ${name} failed:`, err); }
   }
+  pullWishes(); setInterval(pullWishes, 8000);
   setInterval(balloon, 1800);
   for (let i = 0; i < 5; i++) setTimeout(balloon, i * 400);
 
@@ -805,11 +843,22 @@ $("#modalClose").addEventListener("click", () => ($("#modal").hidden = true));
 $("#modal").addEventListener("click", e => { if (e.target.id === "modal") $("#modal").hidden = true; });
 addEventListener("keydown", e => { if (e.key === "Escape") $("#modal").hidden = true; });
 
-$("#wishForm").addEventListener("submit", e => {
+$("#wishForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const who = $("#wishName").value.trim(), text = $("#wishText").value.trim();
+  const who = $("#wishName").value.trim().slice(0, 40), text = $("#wishText").value.trim().slice(0, 180);
   if (!who || !text) return;
-  const l = wishes().slice(); l.unshift({ who, text }); store.set("wishes", l);
+  if (SHARED) {
+    try {
+      const body = JSON.stringify({ who, text, t: Date.now() });
+      const r = await fetch(NTFY, { method: "POST", body });
+      if (!r.ok) throw new Error(r.status);
+      remote.unshift(JSON.parse(body));          // show it straight away; the next poll confirms it
+      renderWishes();
+      pullWishes();
+    } catch (err) { return toast("Couldn't post the wish — check your connection 😬"); }
+  } else {
+    const l = wishes().slice(); l.unshift({ who, text }); store.set("wishes", l);
+  }
   $("#wishText").value = ""; renderWishes();
   fx.burst(innerWidth / 2, innerHeight * .75, 60, 14);
   music.blip(1200); toast("Wish added to the wall 💌");

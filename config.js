@@ -5,6 +5,9 @@
 window.CONFIG = {
   name: "Prajna",
 
+  // Shared wish wall (keyless ntfy.sh topic; messages expire after ~12 hours).
+  ntfyTopic: "prajna-bday-95be700d594faf37",
+
   // Birth date — YYYY, MM (1-12), DD. Used for the live counters.
   birth: { year: 2001, month: 12, day: 18 },
 
